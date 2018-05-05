@@ -6,13 +6,13 @@ from datetime import datetime
 import logging
 from multiprocessing import Pool
 global database
+from sqlQuery import create_table_sql
 
 global currency_list
-currency_list = [ 'BTC', 'ETH', 'LTC', 'XRP',
+currency_list = [ 'BTC', 'ETH', 'LTC', 
 	         'BCH', 'OMG',  'ZRX', 'GNT', 
-	         'BAT', 'AE', 'TRX', 'XLM', 'NEO',
-	         'GAS', 'XRB', 'NCASH', 'AION', 
-	         'EOS', 'ONT', 'ZIL', 'IOST']
+	         'TRX', 'XLM', 'NEO',
+	          'EOS', 'ONT', 'XRP']
 
 
 logger = logging.getLogger(__name__)
@@ -34,19 +34,15 @@ def prices( exchange):
 		r = requests.get(hitbtc_url)
 		response = r.json()
 
-		global curr
-
-		price_dic = {}
+		prices_dic = {}
 		for i in response:
 			symbol = i['symbol']
 			price = i['last']
 			for curr in currency_list:
 				if symbol == curr + 'USD':
-					price_dic[curr] = float(price)
-
-		prices_dic = {}
-		for curr in currency_list:
-			prices_dic[curr] = eval(curr + '_hitbtc')
+					prices_dic[curr] = float(price)
+				elif symbol == curr + 'USDT':
+					prices_dic[curr] = float(price)
 
 		print (prices_dic)
 		return prices_dic
@@ -87,13 +83,7 @@ def prices( exchange):
 		prices = response['stats']['inr']
 		prices_dic = {}
 		for curr in currency_list:
-			key = curr + '_koinex'
-			key = float(prices[curr]['last_traded_price'])
-			price_dic[curr] = 
-		
-		prices_dic = {}
-		for curr in currency_list:
-			prices_dic[curr] = eval(curr + '_koinex')
+			prices_dic[curr] = float(prices[curr]['last_traded_price'])
 
 		return prices_dic
 
@@ -105,7 +95,6 @@ def arbritrage( exch1, curr1, exch2, curr2):
 		All exchanges have prices in USD only, only India gives in INR to
 		hardcoding for it otherwise not needed
 	'''
-
 	prices1 = prices(exch1)
 	prices2 = prices(exch2)
 
@@ -122,11 +111,11 @@ def arbritrage( exch1, curr1, exch2, curr2):
 			prices2[k] = v/rate
 
 	change = {}
-	for i in curr:
-		change[i] = (prices1[i] - prices2[i]) / prices2[i]
+	for i in currency_list:
+		change[i] = (  prices1[i] - prices2[i]  )   /   prices2[i]
 
 	price_dic = {}
-	for i in curr:
+	for i in currency_list:
 		price_dic[i] = [(exch1, prices1[i]), (exch2, prices2[i]), round(change[i]*100)]
 
 	return price_dic
@@ -141,33 +130,6 @@ def create_connection(db_file):
 
 def create_table():
 
-	create_table_sql ='''
-	create table 
-	if not exists arbitrage2 (
-	BTC1 integer,
-	BTC2 integer,
-	ETH1 integer, 
-	ETH2 integer,
-	XRP1 integer, 
-	XRP2 integer, 
-	LTC1 integer,
-	LTC2 integer,
-	BCH1 integer,
-	BCH2 integer,
-	OMG1 integer,
-	OMG2 integer,
-
-	BTC integer, 
-	ETH integer,
-	XRP integer,
-	LTC integer,
-	BCH integer,
-	OMG integer,
-
-	time date,
-	type char
-	);
-	'''
 	global database
 
 	conn = create_connection(database)
@@ -199,7 +161,7 @@ def find_arbitage_opportunity( exch1, exch2):
 			conn = sqlite3.connect(database)
 			c = conn.cursor()
 			text = exch1 + ' vs ' + exch2
-			c.execute("insert into arbitrage values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ( 
+			c.execute("insert into arbitrage4 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ( 
 				price_dic['BTC'][0][1], price_dic['BTC'][1][1], 
 				price_dic['ETH'][0][1], price_dic['ETH'][1][1],
 				price_dic['XRP'][0][1], price_dic['XRP'][1][1],
@@ -212,7 +174,7 @@ def find_arbitage_opportunity( exch1, exch2):
 				)
 			conn.commit()
 			conn.close()
-			time.sleep(900)
+			time.sleep(3600)
 		except Exception as e:
 			print (e)
 			break
