@@ -4,18 +4,27 @@ import sqlite3
 import time
 from datetime import datetime
 import logging
-from multiprocessing import Pool
 global database
 from sqlQuery import create_table_sql
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('spam.log')
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 
 global currency_list
 currency_list = [ 'BTC', 'ETH', 'LTC', 
 	         'BCH', 'OMG',  'ZRX', 'GNT', 
 	         'TRX', 'XLM', 'NEO',
 	          'EOS', 'ONT', 'XRP']
-
-
-logger = logging.getLogger(__name__)
 
 database = "cryptos.db"
 
@@ -44,7 +53,6 @@ def prices( exchange):
 				elif symbol == curr + 'USDT':
 					prices_dic[curr] = float(price)
 
-		print (prices_dic)
 		return prices_dic
 
 	# elif exchange.lower() == 'bitfinex':
@@ -76,8 +84,8 @@ def prices( exchange):
 			r = requests.get(koinex_url)
 			response =  r.json()
 		except Exception as e:
-			print(e)
-			print ('Most likely limited so try again after 15 minutes')
+			logger.exception(e)
+			logger.info('Most likely limited so try again after 15 minutes')
 
 
 		prices = response['stats']['inr']
@@ -125,7 +133,7 @@ def create_connection(db_file):
 		conn = sqlite3.connect(db_file)
 		return conn
 	except Exception as e:
-		print(e)
+		logger.exception(e)
 		return None
 
 def create_table():
@@ -138,9 +146,9 @@ def create_table():
 			c = conn.cursor()
 			c.execute(create_table_sql)
 		except Exception as e:
-			print(e)
+			logger.exception(e)
 	else:
-		print('Error! database connection failed')	
+		logger.info('Error! database connection failed')	
 
 def find_arbitage_opportunity( exch1, exch2):
 
@@ -155,37 +163,66 @@ def find_arbitage_opportunity( exch1, exch2):
 
 	while True:
 		price_dic = arbritrage(exch1, curr,  exch2, 'USD')
+		pprint(price_dic)
 
 		try:
-			pprint(price_dic)
 			conn = sqlite3.connect(database)
 			c = conn.cursor()
 			text = exch1 + ' vs ' + exch2
-			c.execute("insert into arbitrage4 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ( 
+			c.execute("insert into arbitrage5 values \
+				(\
+			     ?,?,?,?,?,?,?,?,?,?,\
+				 ?,?,?,?,?,?,?,?,?,?,\
+				 ?,?,?,?,?,?,?,?,?,?,\
+				 ?,?,?,?,?,?,?,?,?,?,\
+				 ?\
+				 )",
+
+				( 
 				price_dic['BTC'][0][1], price_dic['BTC'][1][1], 
 				price_dic['ETH'][0][1], price_dic['ETH'][1][1],
 				price_dic['XRP'][0][1], price_dic['XRP'][1][1],
 				price_dic['LTC'][0][1], price_dic['LTC'][1][1],
 				price_dic['BCH'][0][1], price_dic['BCH'][1][1],
 				price_dic['OMG'][0][1], price_dic['OMG'][1][1],
-				price_dic['BTC'][2], price_dic['ETH'][2], price_dic['XRP'][2], price_dic['LTC'][2], price_dic['BCH'][2], price_dic['OMG'][2],
+				price_dic['ZRX'][0][1], price_dic['ZRX'][0][1],
+				price_dic['GNT'][0][1], price_dic['GNT'][0][1],
+				price_dic['TRX'][0][1], price_dic['TRX'][0][1],
+				price_dic['XLM'][0][1], price_dic['XLM'][0][1],
+				price_dic['NEO'][0][1], price_dic['NEO'][0][1],
+				price_dic['EOS'][0][1], price_dic['EOS'][0][1],
+				price_dic['ONT'][0][1], price_dic['ONT'][0][1],
+
+				price_dic['BTC'][2],
+				price_dic['ETH'][2],
+				price_dic['XRP'][2],
+				price_dic['LTC'][2],
+				price_dic['BCH'][2],
+				price_dic['OMG'][2],
+				price_dic['ZRX'][2],
+				price_dic['GNT'][2],
+				price_dic['TRX'][2],
+				price_dic['XLM'][2],
+				price_dic['NEO'][2],
+				price_dic['EOS'][2],
+				price_dic['ONT'][2],
 				datetime.now(),
-				text)
+				text
 				)
+				
+				)
+
 			conn.commit()
 			conn.close()
 			time.sleep(3600)
 		except Exception as e:
-			print (e)
+			logger.exception(e)
 			break
 
-def main():
-	print('running main program')
-	find_arbitage_opportunity('koinex', 'hitbtc')
 
+logger.info('running main program')
+find_arbitage_opportunity('koinex', 'hitbtc')
 
-if __name__ == '__main__':
-	main()
 
 
 
