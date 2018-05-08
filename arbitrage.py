@@ -26,7 +26,7 @@ currency_list = [ 'BTC', 'ETH', 'LTC',
 	         'TRX', 'XLM', 'NEO',
 	          'EOS', 'ONT', 'XRP']
 
-database = "cryptos.db"
+database = "cryptos2.db"
 
 koinex_url = 'https://koinex.in/api/ticker'
 hitbtc_url = 'https://api.hitbtc.com/api/2/public/ticker/'
@@ -40,6 +40,8 @@ def prices( exchange):
 		'''
 		HitBTC price getting API
 		'''
+
+		logger.info("Getting hitbtc prices")
 		r = requests.get(hitbtc_url)
 		response = r.json()
 
@@ -80,6 +82,8 @@ def prices( exchange):
 		'''
 		Koinex price getting API
 		'''
+
+		logger.info("Getting koinex prices")
 		try:
 			r = requests.get(koinex_url)
 			response =  r.json()
@@ -106,15 +110,13 @@ def arbritrage( exch1, curr1, exch2, curr2):
 	prices1 = prices(exch1)
 	prices2 = prices(exch2)
 
+	rate = 66.0
+
 	if curr1 == 'INR':
-		prices1 = prices(exch1)
-		rate = 66.0
 		for k,v in prices1.items():
 			prices1[k] = v/rate
 
 	elif curr2 == 'INR':
-		prices2 = prices(exch2)
-		rate = 66.0
 		for k,v in prices2.items():
 			prices2[k] = v/rate
 
@@ -124,7 +126,7 @@ def arbritrage( exch1, curr1, exch2, curr2):
 
 	price_dic = {}
 	for i in currency_list:
-		price_dic[i] = [(exch1, prices1[i]), (exch2, prices2[i]), round(change[i]*100)]
+		price_dic[i] = [(exch1, round(prices1[i]),2), (exch2, round(prices2[i]),2), round(change[i]*100)]
 
 	return price_dic
 
@@ -145,6 +147,7 @@ def create_table():
 		try:
 			c = conn.cursor()
 			c.execute(create_table_sql)
+			logger.info("Created table in databse %s"%database)
 		except Exception as e:
 			logger.exception(e)
 	else:
@@ -214,7 +217,7 @@ def find_arbitage_opportunity( exch1, exch2):
 
 			conn.commit()
 			conn.close()
-			time.sleep(3600)
+			time.sleep(60*60*30) #note every half hour
 		except Exception as e:
 			logger.exception(e)
 			break
