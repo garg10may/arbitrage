@@ -217,7 +217,7 @@ def find_arbitage_opportunity( exch1, exch2):
 
 			conn.commit()
 			conn.close()
-			time.sleep(60*60*30) #note every half hour
+			time.sleep(60*60) #note every half hour
 		except Exception as e:
 			logger.exception(e)
 			break
